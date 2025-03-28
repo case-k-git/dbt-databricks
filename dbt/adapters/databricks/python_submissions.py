@@ -510,13 +510,13 @@ class AllPurposeClusterPythonJobHelper(BaseDatabricksHelper):
                     get_state_func=lambda response: response["status"],
                     terminal_states=("Cancelled", "Error", "Finished", "Canceled"),
                     expected_end_state="Finished",
-                    get_state_msg_func=lambda response: response.get("results", {}).get("data", "No data available"),
+                    get_state_msg_func=lambda response: response.json()["results"]["data"],
                 )
 
-                if response.get("results", {}).get("resultType") == "error":
+                if response["results"]["resultType"] == "error":
                     raise DbtRuntimeError(
                         f"Python model failed with traceback as:\n"
-                        f"{utils.remove_ansi(response.get('results', {}).get('cause', 'No cause available'))}"
+                        f"{utils.remove_ansi(response['results']['cause'])}"
                     )
             finally:
                 if command_exec:
