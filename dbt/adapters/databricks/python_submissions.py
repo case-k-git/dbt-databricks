@@ -264,7 +264,7 @@ class BaseDatabricksHelper(PythonJobHelper):
                 "Python model failed with traceback as:\n"
                 "(Note that the line number here does not "
                 "match the line number in your code due to dbt templating)\n"
-                f"{utils.remove_ansi(json_run_output.get('error_trace', 'Job was likely canceled'))}"
+                f"{utils.remove_ansi(json_run_output['error_trace'])}"
             )
         self.tracker.remove_run_id(run_id)
 
@@ -297,13 +297,9 @@ class BaseDatabricksHelper(PythonJobHelper):
         if exceeded_timeout:
             raise DbtRuntimeError("python model run timed out")
         if state != expected_end_state:
-            if state == "CANCELED" or state == "Cancelled":
-                raise DbtRuntimeError(
-                    f"Python model run was canceled. State: {state}"
-                )
             raise DbtRuntimeError(
                 "python model run ended in state"
-                f" {state} with state_message\n{get_state_msg_func(response)}"
+                f"{state} with state_message\n{get_state_msg_func(response)}"
             )
         return response
 
