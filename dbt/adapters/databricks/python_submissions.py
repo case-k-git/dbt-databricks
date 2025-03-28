@@ -247,7 +247,7 @@ class BaseDatabricksHelper(PythonJobHelper):
                 "headers": self.extra_headers,
             },
             get_state_func=lambda response: response.json()["state"]["life_cycle_state"],
-            terminal_states=("TERMINATED", "SKIPPED", "INTERNAL_ERROR"),
+            terminal_states=("TERMINATED", "SKIPPED", "INTERNAL_ERROR", "CANCELED"),
             expected_end_state="TERMINATED",
             get_state_msg_func=lambda response: response.json()["state"]["state_message"],
         )
@@ -264,7 +264,7 @@ class BaseDatabricksHelper(PythonJobHelper):
                 "Python model failed with traceback as:\n"
                 "(Note that the line number here does not "
                 "match the line number in your code due to dbt templating)\n"
-                f"{utils.remove_ansi(json_run_output['error_trace'])}"
+                f"{utils.remove_ansi(json_run_output.get('error_trace', 'Job was likely canceled'))}"
             )
         self.tracker.remove_run_id(run_id)
 
@@ -297,9 +297,13 @@ class BaseDatabricksHelper(PythonJobHelper):
         if exceeded_timeout:
             raise DbtRuntimeError("python model run timed out")
         if state != expected_end_state:
+            if state == "CANCELED" or state == "Cancelled":
+                raise DbtRuntimeError(
+                    f"Python model run was canceled. State: {state}"
+                )
             raise DbtRuntimeError(
                 "python model run ended in state"
-                f"{state} with state_message\n{get_state_msg_func(response)}"
+                f" {state} with state_message\n{get_state_msg_func(response)}"
             )
         return response
 
@@ -508,15 +512,15 @@ class AllPurposeClusterPythonJobHelper(BaseDatabricksHelper):
                         "command_id": command_id,
                     },
                     get_state_func=lambda response: response["status"],
-                    terminal_states=("Cancelled", "Error", "Finished"),
+                    terminal_states=("Cancelled", "Error", "Finished", "Canceled"),
                     expected_end_state="Finished",
-                    get_state_msg_func=lambda response: response.json()["results"]["data"],
+                    get_state_msg_func=lambda response: response.get("results", {}).get("data", "No data available"),
                 )
 
-                if response["results"]["resultType"] == "error":
+                if response.get("results", {}).get("resultType") == "error":
                     raise DbtRuntimeError(
                         f"Python model failed with traceback as:\n"
-                        f"{utils.remove_ansi(response['results']['cause'])}"
+                        f"{utils.remove_ansi(response.get('results', {}).get('cause', 'No cause available'))}"
                     )
             finally:
                 if command_exec:
