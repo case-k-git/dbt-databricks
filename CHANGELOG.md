@@ -1,9 +1,15 @@
 ## dbt-databricks 1.10.2 (TBD)
 
+### Features
+
+- Support constraint updates on incremental runs (with Materialization V2) ([1013](https://github.com/databricks/dbt-databricks/pull/1013))
+- Add catalog integration support - set table formats, file formats, and locations in `catalogs.yml` ([1012](https://github.com/databricks/dbt-databricks/pull/1012))
+
 ### Fixes
 
 - Fix bug with multiple not_null constraints defined on the model level ([1008](https://github.com/databricks/dbt-databricks/pull/1008))
 - Fix ACL permissions not applied to notebook jobs created by DBT Python model ([1015](https://github.com/databricks/dbt-databricks/pull/1015))
+- Fix bug with temp tables not being dropped after python model is materialized ([1010](https://github.com/databricks/dbt-databricks/issues/1010))
 
 ## dbt-databricks 1.10.1 (Apr 29, 2025)
 
